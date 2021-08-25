@@ -2,9 +2,7 @@
 
 ## 실행 방법
 
-'''
-python main.py
-'''
+  python main.py
 
 ## 입출력 파일 경로
 원본 이미지, xml : ./original/
