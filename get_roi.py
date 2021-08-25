@@ -84,25 +84,24 @@ def process_roi(img, roi):
         return crop_square(img, roi)
 
 
-pathDir = os.getcwd() + '/get_roi/'
-originalDir = pathDir + 'original/'
-circleDir = pathDir + 'scope/'
-create_folder(circleDir)
-squareDir = pathDir + 'square/'
-create_folder(squareDir)
-
-switch = 'square'
-test = 1
-
-manual_list = ['1-6.jpg']
-
-file_list = os.listdir(originalDir)
-img_list = []
-for img in file_list:
-    img_list.append(cv2.imread(originalDir + img))
-
-
 def main():
+    pathDir = os.getcwd() + '/get_roi/'
+    originalDir = pathDir + 'original/'
+    circleDir = pathDir + 'scope/'
+    create_folder(circleDir)
+    squareDir = pathDir + 'square/'
+    create_folder(squareDir)
+
+    switch = 'square'
+    test = 1
+
+    manual_list = ['1-6.jpg']
+
+    file_list = os.listdir(originalDir)
+    img_list = []
+    for img in file_list:
+        img_list.append(cv2.imread(originalDir + img))
+
     for i, img in enumerate(img_list):
         if file_list[i] in manual_list:
             roi = manual_roi.find_roi_manually(img, switch)

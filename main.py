@@ -15,7 +15,7 @@ def create_folder(directory):
 
 def load_xml(doc):
     root = doc.getroot()  # annotation
-    table = ['folder', 'filename', 'path', 'database', 'width', 'height', 'depth', 'segmented']
+    table = [['folder', 'filename', 'path', 'database', 'width', 'height', 'depth', 'segmented']]
     line = []
     line.append(root.findtext('folder'))
     line.append(root.findtext('filename'))
@@ -33,10 +33,10 @@ def load_xml(doc):
         line.append(object.findtext('pose'))
         line.append(object.findtext('truncated'))
         line.append(object.findtext('difficult'))
-        line.append(object.find('bndbox').findtext('xmin'))
-        line.append(object.find('bndbox').findtext('ymin'))
-        line.append(object.find('bndbox').findtext('xmax'))
-        line.append(object.find('bndbox').findtext('ymax'))
+        line.append(int(object.find('bndbox').findtext('xmin')))
+        line.append(int(object.find('bndbox').findtext('ymin')))
+        line.append(int(object.find('bndbox').findtext('xmax')))
+        line.append(int(object.find('bndbox').findtext('ymax')))
         table.append(line)
     return table
 
@@ -59,11 +59,11 @@ def is_bbox_outside_square(bbox, square):
 
 
 def crop_boxes(table, square):
-    for i, cell in enumerate(table[3:]):
+    for i, cell in enumerate(table):
         bbox = cell[4:8]
         # square 밖의 bbox 제거
         if is_bbox_outside_square(bbox, square) == 1:
-            table.remove(i + 3)
+            table.pop(i)
         # square 안의 bbox 사이즈에 맞게 이동
         else:
             move_bbox(bbox, square)
@@ -81,21 +81,46 @@ def move_bbox(bbox, square):
 
 
 def resize_bbox(bbox, scale):
-    for item in bbox:
+    for item in bbox[4:]:
         item = int(item * scale)
     return bbox
 
 
-def split_table(table, split_mat):
-    width = table[1][4]
-    height = table[1][5]
+def split_img(img, mat):
+    height, width = img.shape[:2]
+    dh = int(height / mat[0])
+    dw = int(width / mat[1])
+    print('h, w = %d, %d, mat = [%d, %d], dh, dw = %d, %d' % (height, width, mat[0], mat[1], dh, dw))
+    images = []
+    for r in range(mat[0]):
+        for c in range(mat[1]):
+            print('split : [%d:%d, %d:%d]'%(dh*r, dh*(r+1), dw*c, dw*(c+1)))
+            images.append(img[dh*r : dh*(r+1), dw*c : dw*(c+1)].copy())
+    return images
+
+
+def split_table(table_title, table, mat):
+    height = int(table_title[1][5])
+    width = int(table_title[1][4])
+    dh = int(height / mat[0])
+    dw = int(width / mat[1])
+
+    tables = []
+
+    for r in range(mat[0]-1):
+        tables.append([])
+        for c in range(mat[1]-1):
+            square = [dh*r, dw*c, dh*(r+1), dw*(c+1)]
+            tables[r].append(crop_boxes(table, square))
+
+    return tables
 
 
 def main():
     # 경로 설정
     path_dir = os.getcwd()
-    original_dir = path_dir + 'original/'
-    result_dir = path_dir + 'result/'
+    original_dir = path_dir + '/original/'
+    result_dir = path_dir + '/result/'
     create_folder(result_dir)
 
     # xml, 이미지 명단
@@ -115,18 +140,48 @@ def main():
         doc = ET.parse(original_dir + xml_list[page])
         print('loaded file : %s, %s' % (img_list[page], xml_list[page]))
 
-        # xml파일을 리스트로 불러오기
+        # xml파일을 리스트로 불러오기 ... title까지 전부!
         print('loading xml')
-        table = load_xml(doc)
+        table_origin = load_xml(doc)
+        table_title = table_origin[:3]
+        table = table_origin[3:]
 
         # scope에 내접하는 정사각형 찾기
         print('finding square inside scope : ', end='')
         square = get_roi.find_roi(img, 'square')
-        print('(%d, %d), (%d, %d)' % (square.split()))
+        print('square =', square)
 
-        # bbox, 이미지 정사각형으로 crop
+        # 이미지, bbox 정사각형으로 crop
+        print('cropping image, bboxes')
         table = crop_boxes(table, square)
         img = get_roi.process_roi(img, square)
 
-        # bbox, 이미지 분할
-        new_tables =
+        # 이미지, bbox resize, split, 저장까지 일괄로
+        ratios = [1.0, 1.2, 1.5, 2.0]
+        mat_split = [[3, 2], [2, 2]]
+        for i, ratio in enumerate(ratios):
+            print('resizing %.1fx' % ratio)
+            img_temp = cv2.resize(img, (0, 0), fx=ratio, fy=ratio)
+            table_temp = table.copy()
+            for bbox in table_temp:
+                resize_bbox(bbox, ratio)
+
+            # split, 저장
+            ratio_dir = result_dir + 'resized(x%.1f)/' % ratio
+            create_folder(ratio_dir)
+            for mat in mat_split:
+                print('spliting in', mat)
+                images = split_img(img_temp, mat)
+                tables = split_table(table_title, table_temp, mat)
+                split_dir = ratio_dir + 'splited(%d,%d)/' % (mat[0], mat[1])
+                create_folder(split_dir)
+                print(split_dir)
+                for i, img_result in enumerate(images):
+                    cv2.imwrite(split_dir + filename_list[page] + '-%d' % (i+1) + '.jpg', img_result)
+                    # autoxml.autoxml(
+        print('complete')
+    print('all process completed')
+
+
+if __name__ == '__main__':
+    main()
