@@ -1,6 +1,7 @@
 # crop_image_n_bbox
 
 ## 실행 방법
+
   python main.py
 
 ## 입출력 파일 경로
