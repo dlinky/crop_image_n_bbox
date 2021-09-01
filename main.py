@@ -1,6 +1,7 @@
 import os
 import cv2
 import labelimg_xml
+import copy
 
 import get_roi
 
@@ -30,8 +31,8 @@ def is_bbox_outside_square(bbox, square):
 
 
 def crop_boxes(title, table, square):
-    new_title = title.copy()
-    new_table = table.copy()
+    new_title = copy.deepcopy(title)
+    new_table = copy.deepcopy(table)
     print('cropping bboxes')
     for i, cell in enumerate(new_table[:]):
         bbox = cell[1:5]
@@ -40,7 +41,7 @@ def crop_boxes(title, table, square):
             new_table.remove(cell)
         # square 안의 bbox 사이즈에 맞게 이동
         else:
-            cell[1:5] = move_bbox(bbox, square)
+            cell[1:5] = move_bbox(bbox, square)  #여기서 원본 테이블이 바뀌는 문제
             print('moved to', cell[1:5])
 
     new_title[4] = str(square[2] - square[0])
@@ -57,8 +58,10 @@ def move_bbox(bbox, square):
 
 
 def resize_bbox(bbox, scale):
-    for item in bbox[4:]:
-        item = int(item * scale)
+    print('resizing bbox :', bbox)
+    for i, item in enumerate(bbox[1:]):
+        bbox[i+1] = int(item * scale)
+    print('into scale %.1f :'%scale, bbox)
     return bbox
 
 
@@ -124,7 +127,6 @@ def main():
         img = cv2.imread(original_dir + img_list[page])
         title, table = labelimg_xml.read_xml(original_dir, filename + '.xml')
 
-        '''
         # scope에 내접하는 정사각형 찾기
         print('finding square inside scope : ', end='')
         square = get_roi.find_roi(img, 'square')
@@ -135,7 +137,6 @@ def main():
         print('cropping image, bboxes')
         title, table = crop_boxes(title, table, square)
         img = get_roi.process_roi(img, square)
-        '''
 
         # 이미지, bbox resize, split, 저장까지 일괄로
         print('resizing image, bboxes')
@@ -144,9 +145,12 @@ def main():
         for ratio in ratios:
             print('resizing %.1fx' % ratio)
             img_temp = cv2.resize(img, (0, 0), fx=ratio, fy=ratio)
-            table_temp = table.copy()
+            title_temp = copy.deepcopy(title)
+            title_temp[4] = int(int(title[4]) * ratio)
+            title_temp[5] = int(int(title[5]) * ratio)
+            table_temp = copy.deepcopy(table)
             for bbox in table_temp:
-                resize_bbox(bbox, ratio)
+                bbox = resize_bbox(bbox, ratio)
 
             print('spliting image, bboxes')
             # split, 저장
@@ -155,7 +159,7 @@ def main():
             for mat in mat_split:
                 print('spliting in', mat)
                 images = split_img(img_temp, mat)
-                titles, tables = split_table(title, table_temp, mat)
+                titles, tables = split_table(title_temp, table_temp, mat)
                 split_dir = ratio_dir + 'splited(%d,%d)/' % (mat[1], mat[0])
                 create_folder(split_dir)
                 for i, img_result in enumerate(images):
