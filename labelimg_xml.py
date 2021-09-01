@@ -72,6 +72,7 @@ def write_xml(title, table, path, filename):
 
     tree = ET.ElementTree(root)
     tree.write(path + filename)
+    print('written in %s' % (path + filename))
 
 
 def main():

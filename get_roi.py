@@ -41,7 +41,7 @@ def find_roi_scope(img):
             # 중심에 가장 가까운 원 저장
             if abs(final_circle[0] - width / 2) > abs(current_circle[0] - width / 2) and abs(final_circle[1] - height / 2) > abs(current_circle[1] - height / 2):
                 final_circle = current_circle
-            return final_circle
+            return final_circle  # (x, y, radius)
     else:
         return [0, 0, 0]
 
@@ -71,9 +71,8 @@ def remove_scope(image, roi):
 
 
 def crop_square(image, roi):
-    ymin, xmin, ymax, xmax = roi  # 좌표 수정해야됨. row랑 x랑 자꾸 헷갈림...
-    masked = image[xmin:xmax, ymin:ymax]
-    masked = cv2.resize(masked, (1280, 1280))
+    xmin, ymin, xmax, ymax = roi  # 좌표 수정해야됨. row랑 x랑 자꾸 헷갈림...
+    masked = image[ymin:ymax, xmin:xmax]
     return masked
 
 
