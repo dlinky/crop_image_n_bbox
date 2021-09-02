@@ -43,7 +43,7 @@ def read_xml(path, filename):
 def write_xml(title, table, path, filename):
     print('writing xml')
     root = ET.Element('annotation')
-    ET.SubElement(root, 'folder').text = title[0]
+    ET.SubElement(root, 'folder').text = title[2].split('/')[-2]
     ET.SubElement(root, 'filename').text = title[1]
     ET.SubElement(root, 'path').text = title[2]
 

@@ -126,7 +126,7 @@ def main():
         # xml, 이미지 로드
         img = cv2.imread(original_dir + img_list[page])
         title, table = labelimg_xml.read_xml(original_dir, filename + '.xml')
-
+        '''
         # scope에 내접하는 정사각형 찾기
         print('finding square inside scope : ', end='')
         square = get_roi.find_roi(img, 'square')
@@ -137,7 +137,7 @@ def main():
         print('cropping image, bboxes')
         title, table = crop_boxes(title, table, square)
         img = get_roi.process_roi(img, square)
-
+        '''
         # 이미지, bbox resize, split, 저장까지 일괄로
         print('resizing image, bboxes')
         ratios = [1.0, 1.2, 1.5, 2.0]
