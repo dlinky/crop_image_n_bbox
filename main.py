@@ -5,6 +5,8 @@ import copy
 
 import get_roi
 
+scope_switch = 1
+
 
 def create_folder(directory):
     try:
@@ -118,26 +120,30 @@ def main():
 
     # 파일 이름만 별도로 저장
     filename_list = []
-    for item in xml_list:
+    for item in img_list:
         filename_list.append(item.split('.')[0])
 
     for page, filename in enumerate(filename_list):
         print('processing', filename)
         # xml, 이미지 로드
         img = cv2.imread(original_dir + img_list[page])
-        title, table = labelimg_xml.read_xml(original_dir, filename + '.xml')
-        '''
-        # scope에 내접하는 정사각형 찾기
-        print('finding square inside scope : ', end='')
-        square = get_roi.find_roi(img, 'square')
+        if xml_list:
+            title, table = labelimg_xml.read_xml(original_dir, filename + '.xml')
 
-        print('square =', square)
+        if scope_switch == 1:
+            # scope에 내접하는 정사각형 찾기
+            print('finding square inside scope : ', end='')
+            square = get_roi.find_roi(img, 'square')
 
-        # 이미지, bbox 정사각형으로 crop
-        print('cropping image, bboxes')
-        title, table = crop_boxes(title, table, square)
-        img = get_roi.process_roi(img, square)
-        '''
+            print('square =', square)
+
+            # 이미지, bbox 정사각형으로 crop
+            print('cropping image, bboxes')
+            img = get_roi.process_roi(img, square)
+            if xml_list:
+                title, table = crop_boxes(title, table, square)
+
+
         # 이미지, bbox resize, split, 저장까지 일괄로
         print('resizing image, bboxes')
         ratios = [1.0, 1.2, 1.5, 2.0]
@@ -145,12 +151,13 @@ def main():
         for ratio in ratios:
             print('resizing %.1fx' % ratio)
             img_temp = cv2.resize(img, (0, 0), fx=ratio, fy=ratio)
-            title_temp = copy.deepcopy(title)
-            title_temp[4] = int(int(title[4]) * ratio)
-            title_temp[5] = int(int(title[5]) * ratio)
-            table_temp = copy.deepcopy(table)
-            for bbox in table_temp:
-                bbox = resize_bbox(bbox, ratio)
+            if xml_list:
+                title_temp = copy.deepcopy(title)
+                title_temp[4] = int(int(title[4]) * ratio)
+                title_temp[5] = int(int(title[5]) * ratio)
+                table_temp = copy.deepcopy(table)
+                for bbox in table_temp:
+                    bbox = resize_bbox(bbox, ratio)
 
             print('spliting image, bboxes')
             # split, 저장
@@ -159,18 +166,20 @@ def main():
             for mat in mat_split:
                 print('spliting in', mat)
                 images = split_img(img_temp, mat)
-                titles, tables = split_table(title_temp, table_temp, mat)
+                if xml_list:
+                    titles, tables = split_table(title_temp, table_temp, mat)
                 split_dir = ratio_dir + 'splited(%d,%d)/' % (mat[1], mat[0])
                 create_folder(split_dir)
                 for i, img_result in enumerate(images):
                     new_filename = filename + '-%d' % (i+1) + '.jpg'
                     cv2.imwrite(split_dir + new_filename, img_result)
-                    print('result position. table size : %d, cropped table size : %d' % (len(table_temp), len(tables[i])))
-                    titles[i][1] = new_filename
-                    titles[i][2] = split_dir + new_filename
+                    if xml_list:
+                        print('result position. table size : %d, cropped table size : %d' % (len(table_temp), len(tables[i])))
+                        titles[i][1] = new_filename
+                        titles[i][2] = split_dir + new_filename
 
-                    print('write xml')
-                    labelimg_xml.write_xml(titles[i], tables[i], split_dir, filename_list[page] + '-%d' % (i+1) + '.xml')
+                        print('write xml')
+                        labelimg_xml.write_xml(titles[i], tables[i], split_dir, filename_list[page] + '-%d' % (i+1) + '.xml')
         print('complete')
     print('all process completed')
 
