@@ -43,11 +43,66 @@ def find_roi_scope(img):
                 final_circle = current_circle
             return final_circle  # (x, y, radius)
     else:
+        manual_roi.find_roi_manually(img, 'circle')
         return [0, 0, 0]
 
 
+def empty(self):
+    pass
+
+
+def find_roi_scope_ver2(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    temp = img.copy()
+
+    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 0.5, 100, param1=80, param2=80, minRadius=400, maxRadius=1000)
+
+    if circles is not None:
+        circles = np.uint16(np.around(circles))
+
+        # 좌표가 바뀐?
+        final_circle = circles[0, 0]
+        height, width = gray.shape[:]
+        for count, current_circle in enumerate(circles[0, :]):
+            # 중심에 가장 가까운 원 저장
+            if abs(final_circle[0] - width / 2) > abs(current_circle[0] - width / 2) and abs(final_circle[1] - height / 2) > abs(current_circle[1] - height / 2):
+                final_circle = current_circle
+            cv2.circle(temp, (current_circle[0], current_circle[1]), current_circle[2], (0, 255, 0), 2)
+        cv2.circle(temp, (final_circle[0], final_circle[1]), final_circle[2], (255, 0, 0), 3)
+    else:
+        windowName = 'test'
+        cv2.namedWindow(windowName)
+        cv2.createTrackbar('param1', windowName, 100, 255, empty)
+        cv2.createTrackbar('param2', windowName, 100, 255, empty)
+        while True:
+            if cv2.waitKey(10) == 27:
+                cv2.destroyWindow(windowName)
+                break
+            param1 = cv2.getTrackbarPos('param1', windowName)
+            param2 = cv2.getTrackbarPos('param2', windowName)
+            temp = img.copy()
+
+            circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 0.5, 100, param1=param1, param2=param2, minRadius=400,
+                                       maxRadius=1000)
+            if circles is not None:
+                circles = np.uint16(np.around(circles))
+
+                # 좌표가 바뀐?
+                final_circle = circles[0, 0]
+                height, width = gray.shape[:]
+                for count, current_circle in enumerate(circles[0, :]):
+                    # 중심에 가장 가까운 원 저장
+                    if abs(final_circle[0] - width / 2) > abs(current_circle[0] - width / 2) and abs(
+                            final_circle[1] - height / 2) > abs(current_circle[1] - height / 2):
+                        final_circle = current_circle
+                    cv2.circle(temp, (current_circle[0], current_circle[1]), current_circle[2], (0, 255, 0), 2)
+                cv2.circle(temp, (final_circle[0], final_circle[1]), final_circle[2], (255, 0, 0), 3)
+            cv2.imshow(windowName, temp)
+    return final_circle
+
+
 def find_roi_square(img):
-    circle = find_roi_scope(img)
+    circle = find_roi_scope_ver2(img)
     halflen = int(circle[2] / 1.414 * 0.99)  # 스코프 내접 사각형 길이/2 (99%)
     square = [circle[0] - halflen, circle[1] - halflen, circle[0] + halflen,
               circle[1] + halflen]
@@ -56,7 +111,7 @@ def find_roi_square(img):
 
 def find_roi(img, mode):
     if mode == 'circle':
-        return find_roi_scope(img)
+        return find_roi_scope_ver2(img)
     elif mode == 'square':
         return find_roi_square(img)
     else:
