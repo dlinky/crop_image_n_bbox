@@ -143,6 +143,9 @@ def main():
             if xml_list:
                 title, table = crop_boxes(title, table, square)
 
+            cv2.imwrite(result_dir + 'cropped/' + filename + '.jpg', img)
+            labelimg_xml.write_xml(title, table, result_dir + 'cropped/', filename_list[page] + '.xml')
+
         # 이미지, bbox resize, split, 저장까지 일괄로
         print('resizing image, bboxes')
         ratios = [1.0, 1.2, 1.5, 2.0]
