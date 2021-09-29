@@ -1,11 +1,13 @@
 import os
+import sys
+
 import cv2
 import labelimg_xml
 import copy
 
 import get_roi
 
-scope_switch = 1
+scope_switch = 0
 
 
 def create_folder(directory):
@@ -105,7 +107,12 @@ def split_table(title, table, mat):
     return titles, tables
 
 
-def main():
+def main(args):
+    global scope_switch
+    if '-s' in args:
+        scope_switch = 1
+    print(scope_switch)
+
     # 경로 설정
     path_dir = os.getcwd()
     original_dir = path_dir + '/original/'
@@ -187,4 +194,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[:])
