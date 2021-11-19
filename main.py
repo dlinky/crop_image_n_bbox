@@ -173,6 +173,8 @@ def main(args):
             # print('spliting image, bboxes')
             # split, 저장
             ratio_dir = result_dir + 'resized(x%.1f)/' % ratio
+            if ratio == 1.0:
+                ratio_dir = result_dir + 'original/'
             create_folder(ratio_dir)
             for mat in mat_split:
                 # print('spliting in', mat)
@@ -180,6 +182,8 @@ def main(args):
                 if xml_list:
                     titles, tables = split_table(title_temp, table_temp, mat)
                 split_dir = ratio_dir + 'splited(%d,%d)/' % (mat[1], mat[0])
+                if mat == [1,1]:
+                    split_dir = ratio_dir + 'original/'
                 create_folder(split_dir)
                 for i, img_result in enumerate(images):
                     create_folder(split_dir + 'images/')
